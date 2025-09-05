@@ -91,30 +91,76 @@ export default function App() {
     }
   };
 
-  const deleteTodo = async (id: number) => {
-    const todoData = {
-      id: id
-    };
+const deleteTodo = async (id: number) => {
+  console.log('Deleting todo with ID:', id);
+  
+  try {
+    // Using URL parameter..
+    const response = await fetch(`${API_URL}?id=${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
-    try {
-      const response = await fetch(API_URL, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(todoData),
-      });
-
-      if (response.ok) {
-        fetchTodos();
-      } else {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-    } catch (error) {
-      console.error('Error deleting todo:', error);
-      Alert.alert('Error', 'Failed to delete todo');
+    console.log('Delete response status:', response.status);
+    
+    if (response.ok) {
+      console.log('Todo deleted successfully');
+      fetchTodos();
+    } else {
+      const errorText = await response.text();
+      console.log('Delete error response:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
     }
+  } catch (error) {
+    console.error('Error deleting todo:', error);
+    Alert.alert('Error', 'Failed to delete todo');
+  }
+};
+
+// Alternative:body approach
+const deleteTodoWithBody = async (id: number) => {
+  console.log('Deleting todo with ID:', id);
+  
+  const todoData = {
+    id: Number(id)
   };
+
+  try {
+    const response = await fetch(API_URL, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(todoData),
+    });
+
+    console.log('Delete response status:', response.status);
+    
+    if (response.ok) {
+      const result = await response.json();
+      console.log('Delete success:', result);
+      fetchTodos();
+    } else {
+      let errorMessage = 'Unknown error';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (e) {
+        const errorText = await response.text();
+        errorMessage = errorText || errorMessage;
+      }
+      console.log('Delete error:', errorMessage);
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorMessage}`);
+    }
+  } catch (error) {
+    console.error('Error deleting todo:', error);
+    const errorMessage = (error instanceof Error) ? error.message : String(error);
+    Alert.alert('Error', 'Failed to delete todo: ' + errorMessage);
+  }
+};
 
   const renderTodo = ({ item }: { item: Todo }) => (
     <View style={styles.todoItem}>

@@ -197,74 +197,111 @@ public class ToDoServlet extends HttpServlet {
         }
     }
 
-    @Override
-    protected void doDelete(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+   @Override
+protected void doDelete(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException {
 
-     
-        setCorsHeaders(response);
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
+    setCorsHeaders(response);
+    response.setContentType("application/json");
+    response.setCharacterEncoding("UTF-8");
 
+    // Try to get ID from URL parameter first
+    String idParam = request.getParameter("id");
+    
+    if (idParam != null && !idParam.trim().isEmpty()) {
+        // Use URL parameter approach
+        System.out.println("Using URL parameter: " + idParam);
+        
         try {
-            // Read JSON from request body
-            StringBuilder sb = new StringBuilder();
-            BufferedReader reader = request.getReader();
-            String line;
+            int id = Integer.parseInt(idParam);
+            deleteToDoById(id, response);
+            return;
+        } catch (NumberFormatException e) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.getWriter().write("{\"error\": \"Invalid ID format in URL parameter\"}");
+            return;
+        }
+    }
+
+    // Fallback to request body approach
+    System.out.println("No URL parameter found, trying request body");
+    
+    try {
+        // Read from request body (your original approach)
+        StringBuilder sb = new StringBuilder();
+        String line;
+        
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(request.getInputStream(), "UTF-8"))) {
             while ((line = reader.readLine()) != null) {
                 sb.append(line);
             }
-            String jsonBody = sb.toString();
+        }
+        
+        String jsonBody = sb.toString();
+        System.out.println("Request body: '" + jsonBody + "'");
 
-            // Parse JSON
-            JsonObject jsonObject = JsonParser.parseString(jsonBody).getAsJsonObject();
-
-            if (!jsonObject.has("id")) {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                response.getWriter().write("{\"error\": \"ID is required\"}");
-                return;
-            }
-
-            int id = jsonObject.get("id").getAsInt();
-
-            Session session = null;
-            Transaction transaction = null;
-
-            try {
-                session = HibernateUtil.getSessionFactory().openSession();
-                transaction = session.beginTransaction();
-
-                ToDos todo = (ToDos) session.get(ToDos.class, id);
-
-                if (todo != null) {
-                    session.delete(todo);
-                    transaction.commit();
-                    response.getWriter().write("{\"message\": \"Todo deleted successfully\"}");
-                    response.setStatus(HttpServletResponse.SC_OK);
-                } else {
-                    transaction.rollback();
-                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                    response.getWriter().write("{\"error\": \"Todo not found\"}");
-                }
-
-            } catch (Exception e) {
-                if (transaction != null) {
-                    transaction.rollback();
-                }
-                e.printStackTrace();
-                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                response.getWriter().write("{\"error\": \"Failed to delete todo\"}");
-            } finally {
-                if (session != null && session.isOpen()) {
-                    session.close();
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (jsonBody == null || jsonBody.trim().isEmpty()) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            response.getWriter().write("{\"error\": \"Invalid JSON format\"}");
+            response.getWriter().write("{\"error\": \"No ID provided in URL parameter or request body\"}");
+            return;
+        }
+
+        JsonObject jsonObject = JsonParser.parseString(jsonBody.trim()).getAsJsonObject();
+        
+        if (!jsonObject.has("id")) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.getWriter().write("{\"error\": \"ID is required\"}");
+            return;
+        }
+
+        int id = jsonObject.get("id").getAsInt();
+        deleteToDoById(id, response);
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        response.getWriter().write("{\"error\": \"Invalid request: " + e.getMessage() + "\"}");
+    }
+}
+
+private void deleteToDoById(int id, HttpServletResponse response) throws IOException {
+    Session session = null;
+    Transaction transaction = null;
+
+    try {
+        session = HibernateUtil.getSessionFactory().openSession();
+        transaction = session.beginTransaction();
+
+        ToDos todo = (ToDos) session.get(ToDos.class, id);
+        System.out.println("Found todo for deletion: " + (todo != null ? todo.getTitle() : "null"));
+
+        if (todo != null) {
+            session.delete(todo);
+            transaction.commit();
+            response.getWriter().write("{\"message\": \"Todo deleted successfully\"}");
+            response.setStatus(HttpServletResponse.SC_OK);
+        } else {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            response.getWriter().write("{\"error\": \"Todo with ID " + id + " not found\"}");
+        }
+
+    } catch (Exception e) {
+        if (transaction != null) {
+            transaction.rollback();
+        }
+        e.printStackTrace();
+        response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        response.getWriter().write("{\"error\": \"Database error: " + e.getMessage() + "\"}");
+    } finally {
+        if (session != null && session.isOpen()) {
+            session.close();
         }
     }
+}
 
     @Override
     protected void doOptions(HttpServletRequest request, HttpServletResponse response)
