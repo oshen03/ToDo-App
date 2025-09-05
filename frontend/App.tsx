@@ -8,7 +8,7 @@ interface Todo {
   completed: boolean;
 }
 
-const API_URL = 'https://b87c28348446.ngrok-free.app/ToDo/ToDoServlet';
+const API_URL = 'https://b87c28348446.ngrok-free.app/backend//ToDoServlet';
 
 export default function App() {
   const [todos, setTodos] = useState<Todo[]>([]);
