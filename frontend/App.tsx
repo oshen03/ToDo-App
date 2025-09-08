@@ -8,7 +8,7 @@ interface Todo {
   completed: boolean;
 }
 
-const API_URL = 'https://b87c28348446.ngrok-free.app/backend//ToDoServlet';
+const NGROK_URL = 'https://037abf333eb4.ngrok-free.app/backend//ToDoServlet';
 
 export default function App() {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -21,7 +21,7 @@ export default function App() {
 
   const fetchTodos = async () => {
     try {
-      const response = await fetch(API_URL);
+      const response = await fetch(NGROK_URL);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -44,7 +44,7 @@ export default function App() {
     };
 
     try {
-      const response = await fetch(API_URL, {
+      const response = await fetch(NGROK_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -72,7 +72,7 @@ export default function App() {
     };
 
     try {
-      const response = await fetch(API_URL, {
+      const response = await fetch(NGROK_URL, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -92,17 +92,17 @@ export default function App() {
   };
 
   const deleteTodo = async (id: number) => {
-    console.log('Deleting todo with ID:', id);
+    // console.log('Deleting todo with ID:', id);
     
     try {
-      const response = await fetch(`${API_URL}?id=${id}`, {
+      const response = await fetch(`${NGROK_URL}?id=${id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
       });
 
-      console.log('Delete response status:', response.status);
+      // console.log('Delete response status:', response.status);
       
       if (response.ok) {
         console.log('Todo deleted successfully');

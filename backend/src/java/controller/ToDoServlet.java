@@ -14,6 +14,7 @@ import org.hibernate.Transaction;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import java.io.InputStreamReader;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
 
@@ -227,7 +228,7 @@ protected void doDelete(HttpServletRequest request, HttpServletResponse response
     System.out.println("No URL parameter found, trying request body");
     
     try {
-        // Read from request body (your original approach)
+        // Read from request body 
         StringBuilder sb = new StringBuilder();
         String line;
         
